@@ -1,3 +1,17 @@
+# == DO NOT EDIT THE FOLLOWING LINES for the Raspberry Pi Pico VS Code Extension to work ==
+if(WIN32)
+    set(USERHOME $ENV{USERPROFILE})
+else()
+    set(USERHOME $ENV{HOME})
+endif()
+set(sdkVersion 2.1.1)
+set(toolchainVersion 14_2_Rel1)
+set(picotoolVersion 2.1.1)
+set(picoVscode ${USERHOME}/.pico-sdk/cmake/pico-vscode.cmake)
+if (EXISTS ${picoVscode})
+    include(${picoVscode})
+endif()
+# ====================================================================================
 cmake_minimum_required(VERSION 3.6)
 
 ## Version Configuration
@@ -13,13 +27,13 @@ set(PIO_USE_TINYUSB 1 CACHE STRING "Make TinyUSB Manage the PIO USB Port")
 set(PICO_BOARD "pico")
 
 ## Pico SDK Configuration
-set(PICO_SDK_FETCH_FROM_GIT off)
-set(PICO_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/pico-sdk)
+#set(PICO_SDK_FETCH_FROM_GIT off)
+#set(PICO_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/pico-sdk)
 set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
-include(${PICO_SDK_PATH}/pico_sdk_import.cmake)
+include(pico_sdk_import.cmake)
 
 ## Project Setup
-project(deskhop_project C CXX ASM)
+project(deskhop C CXX ASM)
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 17)
 set(PICO_COPY_TO_RAM 1)
@@ -132,10 +146,13 @@ pico_add_extra_outputs(${binary})
 ## Post-Build Commands
 add_custom_command(
     TARGET ${binary} POST_BUILD
-    COMMAND python3 ${CMAKE_SOURCE_DIR}/misc/crc32.py ${binary}.bin ${binary}.crc ${VERSION_MAJOR}${VERSION_MINOR}
+    COMMAND python ${CMAKE_SOURCE_DIR}/misc/crc32.py ${binary}.bin ${binary}.crc ${VERSION_MAJOR}${VERSION_MINOR}
+    COMMAND echo TEST1
     COMMAND ${CMAKE_OBJCOPY} --update-section .section_metadata=${binary}.crc ${binary}.elf
+    COMMAND echo TEST2
     COMMAND ${CMAKE_OBJCOPY} -O binary ${binary}.elf ${binary}.bin
-    COMMAND ${CMAKE_BINARY_DIR}/elf2uf2/elf2uf2 ${binary}.elf ${binary}.uf2
+    COMMAND echo TEST3
+    #COMMAND ${CMAKE_BINARY_DIR}/elf2uf2/elf2uf2 ${binary}.elf ${binary}.uf2
     COMMENT "Update CRC32 section to match the actual binary"  
 )
 

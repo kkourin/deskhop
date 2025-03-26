@@ -14,6 +14,7 @@
  * ================================================== */
 
 #include "main.h"
+#include <hardware/clocks.h>
 
 /* ================================================== *
  * Perform initial UART setup
