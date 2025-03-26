@@ -122,6 +122,9 @@ typedef struct {
     bool uses_report_id;
     bool is_found;
     bool is_nkro;
+
+    report_val_t nkro2[4];
+    uint8_t num_nkro;
 } keyboard_t;
 
 typedef struct {

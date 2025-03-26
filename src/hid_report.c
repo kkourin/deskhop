@@ -99,10 +99,47 @@ void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid
         iface->keyboard.key_array[src->offset_idx] = (src->data_type == ARRAY);
     }
 
-    /* Handle NKRO, normally size = 1, count = 240 or so, but they are swapped. */
+    /*
+    Wooting dump:
+
+    0x19, 0x04,        //   Usage Minimum (0x04)
+    0x29, 0x31,        //   Usage Maximum (0x31)
+    0x95, 0x2E,        //   Report Count (46)
+    0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+
+    0x95, 0x02,        //   Report Count (2)
+    0x81, 0x03,        //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+
+    0x19, 0x33,        //   Usage Minimum (0x33)
+    0x29, 0x9B,        //   Usage Maximum (0x9B)
+    0x95, 0x69,        //   Report Count (105)
+    0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+
+    0x95, 0x07,        //   Report Count (7)
+    0x81, 0x03,        //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+
+    0x19, 0x9D,        //   Usage Minimum (0x9D)
+    0x29, 0xA4,        //   Usage Maximum (0xA4)
+    0x95, 0x08,        //   Report Count (8)
+    0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+
+    0x19, 0xB0,        //   Usage Minimum (0xB0)
+    0x29, 0xDD,        //   Usage Maximum (0xDD)
+    0x95, 0x2E,        //   Report Count (46)
+    0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+
+    0x95, 0x02,        //   Report Count (2)
+    0x81, 0x03,        //   Input (Const,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+
+    */
+
+    // TODO(colin): handle the size 8 range Usage Minimum (0x9D)-Usage Minimum (0xA4) on wooting
     if (src->size > 32 && src->data_type == VARIABLE) {
         iface->keyboard.is_nkro = true;
         iface->keyboard.nkro    = *src;
+
+        iface->keyboard.nkro2[iface->keyboard.num_nkro] = *src;
+        ++iface->keyboard.num_nkro;
     }
 
     /* We found a keyboard on this interface. */
@@ -209,8 +246,7 @@ void extract_data(hid_interface_t *iface, report_val_t *val) {
     }
 }
 
-int32_t extract_bit_variable(report_val_t *kbd, uint8_t *raw_report, int len, uint8_t *dst) {
-    int key_count = 0;
+int32_t extract_bit_variable(report_val_t *kbd, uint8_t *raw_report, int len, uint8_t *dst, int key_count) {
     int bit_offset = kbd->offset & 0b111;
 
     for (int i = kbd->usage_min, j = bit_offset; i <= kbd->usage_max && key_count < len; i++, j++) {
@@ -261,6 +297,12 @@ int32_t _extract_kbd_nkro(uint8_t *raw_report, int len, hid_interface_t *iface, 
         ptr++;
 
     /* We expect array of bits mapping 1:1 from usage_min to usage_max, otherwise panic */
+    for (int i = 0; i < kb->num_nkro; ++i) {
+        if ((kb->nkro2[i].usage_max - kb->nkro2[i].usage_min + 1) != kb->nkro2[i].size) {
+            return -1;
+        }
+    }
+
     if ((kb->nkro.usage_max - kb->nkro.usage_min + 1) != kb->nkro.size)
         return -1;
 
@@ -271,9 +313,15 @@ int32_t _extract_kbd_nkro(uint8_t *raw_report, int len, hid_interface_t *iface, 
         return -1;
 
     /* Move the pointer to the nkro offset's byte index */
-    ptr = &ptr[kb->nkro.offset_idx];
+    //ptr = &ptr[kb->nkro.offset_idx];  // Don't use original nkro
 
-    return extract_bit_variable(&kb->nkro, ptr, KEYS_IN_USB_REPORT, report->keycode);
+    int num_keys = 0;
+    for (int i = 0; i < kb->num_nkro; ++i) {
+        uint8_t* cur_ptr = &ptr[kb->nkro2[i].offset_idx];
+        num_keys = extract_bit_variable(&kb->nkro2[i], cur_ptr, KEYS_IN_USB_REPORT, &(report->keycode[num_keys]), num_keys);
+    }
+
+    return num_keys;
 }
 
 int32_t extract_kbd_data(
