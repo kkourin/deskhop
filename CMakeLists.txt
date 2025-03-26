@@ -14,6 +14,7 @@ endif()
 # ====================================================================================
 cmake_minimum_required(VERSION 3.6)
 
+
 ## Version Configuration
 set(VERSION_MAJOR 00)
 set(VERSION_MINOR 170)
@@ -31,6 +32,8 @@ set(PICO_BOARD "pico")
 #set(PICO_SDK_PATH ${CMAKE_CURRENT_LIST_DIR}/pico-sdk)
 set(SRC_DIR ${CMAKE_CURRENT_LIST_DIR}/src)
 include(pico_sdk_import.cmake)
+
+include(FindELF2UF2New.cmake)
 
 ## Project Setup
 project(deskhop C CXX ASM)
@@ -152,7 +155,8 @@ add_custom_command(
     COMMAND echo TEST2
     COMMAND ${CMAKE_OBJCOPY} -O binary ${binary}.elf ${binary}.bin
     COMMAND echo TEST3
-    #COMMAND ${CMAKE_BINARY_DIR}/elf2uf2/elf2uf2 ${binary}.elf ${binary}.uf2
+    COMMAND ${CMAKE_BINARY_DIR}/elf2uf2/elf2uf2 ${binary}.elf ${binary}.uf2
+    COMMAND echo TEST4
     COMMENT "Update CRC32 section to match the actual binary"  
 )
 
