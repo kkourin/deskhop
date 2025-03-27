@@ -138,8 +138,10 @@ void handle_keyboard_descriptor_values(report_val_t *src, report_val_t *dst, hid
         iface->keyboard.is_nkro = true;
         iface->keyboard.nkro    = *src;
 
-        iface->keyboard.nkro2[iface->keyboard.num_nkro] = *src;
-        ++iface->keyboard.num_nkro;
+        if (iface->keyboard.num_nkro < MAX_NKRO2) {
+            iface->keyboard.nkro2[iface->keyboard.num_nkro] = *src;
+            ++iface->keyboard.num_nkro;
+        }
     }
 
     /* We found a keyboard on this interface. */

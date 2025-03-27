@@ -25,6 +25,7 @@
 #define MAX_KEYS                    32
 #define MAX_REPORTS                 24
 #define MAX_SYS_BUTTONS             8
+#define MAX_NKRO2                   4
 
 /*==============================================================================
  *  Data Structures
@@ -123,7 +124,7 @@ typedef struct {
     bool is_found;
     bool is_nkro;
 
-    report_val_t nkro2[4];
+    report_val_t nkro2[MAX_NKRO2];
     uint8_t num_nkro;
 } keyboard_t;
 
